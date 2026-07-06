@@ -103,18 +103,19 @@ IosNotificationUtils::~IosNotificationUtils()
 void IosNotificationUtils::registerChannel(int channel, const QString &name, int importance, quint32 argb, const QString &iconName, const QString &soundName, bool vibration)
 {
     Q_UNUSED(name)
-    Q_UNUSED(importance)
     Q_UNUSED(argb)
     Q_UNUSED(iconName)
     Q_UNUSED(vibration)
 
-    // iOS has no channel concept; nothing to create. The channel id is reused as the
-    // notification's thread identifier in notify() for grouping. iOS always uses the
-    // app icon (iconName ignored) and has no custom-vibration API (vibration ignored).
+    // iOS has no channel concept, so nothing to create.
+    // - The channel id is reused as the notification's thread identifier in notify() for grouping.
+    // - iOS always uses the app icon (iconName ignored) and has no custom-vibration API (vibration ignored).
+    // - Sound and importance are per-notification on iOS, so remember them here and apply them in notify().
 
-    // Sound is per-notification on iOS, so remember it here and apply it in notify()
     if (soundName.isEmpty()) m_channelSounds.remove(channel);
     else m_channelSounds.insert(channel, soundName);
+
+    m_channelImportance.insert(channel, importance);
 }
 
 void IosNotificationUtils::notify(const QString &title, const QString &message, int channel, int requestId, const QString &payload,
@@ -148,6 +149,26 @@ void IosNotificationUtils::notify(const QString &title, const QString &message, 
 
     content.threadIdentifier = QString::number(channel).toNSString();
     content.userInfo = @{ @"ID": @(requestId), @"PAYLOAD": payload.toNSString() };
+
+    // Map the posting channel's importance to an interruptionLevel (iOS 15+).
+    if (@available(iOS 15.0, *))
+    {
+        switch (m_channelImportance.value(channel, 3 /*ImportanceDefault*/))
+        {
+            case 1: // ImportanceMin
+            case 2: // ImportanceLow
+                content.interruptionLevel = UNNotificationInterruptionLevelPassive;
+                break;
+            case 5: // ImportanceUrgent
+                content.interruptionLevel = UNNotificationInterruptionLevelTimeSensitive;
+                break;
+            case 3: // ImportanceDefault
+            case 4: // ImportanceHigh
+            default:
+                content.interruptionLevel = UNNotificationInterruptionLevelActive;
+                break;
+        }
+    }
 
     // Small non-zero delay, like the original AppUtils implementation
     UNTimeIntervalNotificationTrigger *trigger =

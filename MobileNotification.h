@@ -97,21 +97,35 @@ public:
      */
     static MobileNotification *create(QQmlEngine *qmlEngine, QJSEngine *jsEngine);
 
-    // Channels ////////////////////////////////////////////////////////////////
+    // Notifications importance ////////////////////////////////////////////////
 
     /*!
-     * \brief Channel importance, mapped to each platform's native levels.
+     * \brief Notifications importance / urgency, mapped to each platform's native levels.
      *
-     * Mirrors Android's NotificationManager importance levels.
-     * iOS has no channel concept, so it is essentially informational.
+     * On Android it becomes the NotificationChannel importance (locked at creation).
+     * On iOS there is no channel concept, so the backend remembers each channel's level
+     * and applies it per notification as the UNNotificationContent interruptionLevel (iOS 15+).
+     *
+     * Importance 1-4 match Android's NotificationManager.IMPORTANCE_* constants.
+     * Importance 5-6 won't do anything on Android.
+     *
+     * Importance 5 or "Urgent" can escape iOS Scheduled Summary if the "Time Sensitive
+     * Notifications" self-entitlement has been set, otherwise will downgrades to .active.
+     *
+     * Importance 6 or "Critical" isn't implemented, and would require an Apple validated
+     * "Critical Alerts" entitlement on iOS + some more plumbing.
      */
     enum Importance {
-        ImportanceMin = 1,      //!< No sound, no visual intrusion.
-        ImportanceLow = 2,      //!< No sound.
-        ImportanceDefault = 3,  //!< Makes a sound.
-        ImportanceHigh = 4,     //!< Makes a sound and appears as a heads-up notification.
+        ImportanceMin = 1,      //!< Silent, no visual intrusion.   Android MIN     · iOS .passive
+        ImportanceLow = 2,      //!< Silent.                        Android LOW     · iOS .passive
+        ImportanceDefault = 3,  //!< Makes a sound.                 Android DEFAULT · iOS .active
+        ImportanceHigh = 4,     //!< Sound + heads-up banner.       Android HIGH    · iOS .active
+        ImportanceUrgent = 5,   //!< Time-critical.                 Android HIGH    · iOS .timeSensitive
+        //ImportanceCritical = 6, //!< DnD mode bypass.             Android HIGH + CATEGORY_ALARM · iOS .critical
     };
     Q_ENUM(Importance)
+
+    // Channels ////////////////////////////////////////////////////////////////
 
     /*!
      * \brief Register (or update) a notification channel.

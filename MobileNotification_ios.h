@@ -40,6 +40,9 @@ class IosNotificationUtils : public PlatformNotificationUtils
     //! iOS has no channels; remember each of our channel's custom sound to apply it in notify()
     QHash<int, QString> m_channelSounds;
 
+    //! Likewise remember each channel's importance, applied per notification as interruptionLevel
+    QHash<int, int> m_channelImportance;
+
 public:
     IosNotificationUtils(QObject *parent = nullptr);
     ~IosNotificationUtils();
