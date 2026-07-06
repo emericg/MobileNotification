@@ -8,6 +8,10 @@ set(QT_NO_PRIVATE_MODULE_WARNING ON)
 
 ################################################################################
 
+set(ANDROID_DEPLOY_PATH "AUTO" CACHE STRING "Path to deploy Android resources into (AUTO / OFF / path)")
+
+################################################################################
+
 # Generic dependencies
 find_package(Qt6 REQUIRED COMPONENTS Core Qml)
 set(CORE_LIBRARIES Qt::Core Qt::Qml)
@@ -60,49 +64,38 @@ endif()
 
 ################################################################################
 
-# On Android the module owns its Java sources and (optional) resources.
-# We copy these files into QT_ANDROID_PACKAGE_SOURCE_DIR at configure time.
-# We do not overwrite existing resources, because the parent application is free to use its own.
 if (ANDROID AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/android/src")
-    # If by any chance QT_ANDROID_PACKAGE_SOURCE_DIR exists as a variable (?) we use it
-    if (NOT DEFINED MOBILENOTIFICATION_ANDROID_PACKAGE_SOURCE_DIR AND DEFINED QT_ANDROID_PACKAGE_SOURCE_DIR)
-        set(MOBILENOTIFICATION_ANDROID_PACKAGE_SOURCE_DIR "${QT_ANDROID_PACKAGE_SOURCE_DIR}")
-    endif()
+    # On Android the module owns its Java sources and (optional) resources.
+    # We copy these files into QT_ANDROID_PACKAGE_SOURCE_DIR at configure time.
+    # We do not overwrite existing resources, because the parent application is free to use its own.
 
-    # If by any chance the directory "${CMAKE_SOURCE_DIR}/assets/android/" exists, we use it
-    if (NOT DEFINED MOBILENOTIFICATION_ANDROID_PACKAGE_SOURCE_DIR AND EXISTS "${CMAKE_SOURCE_DIR}/assets/android")
-        set(MOBILENOTIFICATION_ANDROID_PACKAGE_SOURCE_DIR "${CMAKE_SOURCE_DIR}/assets/android")
-    endif()
+    if (ANDROID_DEPLOY_PATH AND NOT ANDROID_DEPLOY_PATH STREQUAL "OFF")
 
-    if (DEFINED MOBILENOTIFICATION_ANDROID_PACKAGE_SOURCE_DIR)
-        file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/android/src"
-             DESTINATION "${MOBILENOTIFICATION_ANDROID_PACKAGE_SOURCE_DIR}")
-
-        if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/android/res")
-            file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/android/res"
-                 DESTINATION "${MOBILENOTIFICATION_ANDROID_PACKAGE_SOURCE_DIR}")
+        if (ANDROID_DEPLOY_PATH STREQUAL "AUTO")
+            # If by any chance QT_ANDROID_PACKAGE_SOURCE_DIR exists as a variable, or if
+            # one of the following directories exists (platforms/android/, assets/android/, android/)
+            if (DEFINED QT_ANDROID_PACKAGE_SOURCE_DIR)
+                set(ANDROID_DEPLOY_PATH "${QT_ANDROID_PACKAGE_SOURCE_DIR}")
+            elseif (EXISTS "${CMAKE_SOURCE_DIR}/platforms/android")
+                set(ANDROID_DEPLOY_PATH "${CMAKE_SOURCE_DIR}/platforms/android")
+            elseif (EXISTS "${CMAKE_SOURCE_DIR}/assets/android")
+                set(ANDROID_DEPLOY_PATH "${CMAKE_SOURCE_DIR}/assets/android")
+            elseif (EXISTS "${CMAKE_SOURCE_DIR}/android")
+                set(ANDROID_DEPLOY_PATH "${CMAKE_SOURCE_DIR}/android")
+            else()
+                message(WARNING "MobileNotification > ANDROID_DEPLOY_PATH is not set!")
+            endif()
         endif()
 
-        message(STATUS "MobileNotification > Deployed Android Java/res into ${MOBILENOTIFICATION_ANDROID_PACKAGE_SOURCE_DIR}")
+        if (EXISTS "${ANDROID_DEPLOY_PATH}")
+            # Copy Java sources
+            file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/android/src"
+                 DESTINATION "${ANDROID_DEPLOY_PATH}")
 
-        # Build-time re-deploy, to iterate on the module's Java/res WITHOUT a CMake
-        # reconfigure (the file(COPY) above only runs at configure time). Invoke on
-        # demand with:  cmake --build <dir> --target MobileNotification_deploy_android
-        # In Debug builds it is also added to ALL, so it re-copies on every build.
-        set(_mobilenotification_deploy_all "")
-        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-            set(_mobilenotification_deploy_all ALL)
+            message(STATUS "MobileNotification > Deployed Android Java/res into ${ANDROID_DEPLOY_PATH}")
+        else()
+            message(WARNING "MobileNotification > ANDROID_DEPLOY_PATH ${ANDROID_DEPLOY_PATH} does not exist!")
         endif()
-        add_custom_target(MobileNotification_deploy_android ${_mobilenotification_deploy_all}
-            COMMAND ${CMAKE_COMMAND} -E copy_directory
-                    "${CMAKE_CURRENT_SOURCE_DIR}/android/src"
-                    "${MOBILENOTIFICATION_ANDROID_PACKAGE_SOURCE_DIR}/src"
-            COMMENT "MobileNotification > Re-deploying Android Java/res (dev)"
-            VERBATIM)
-        unset(_mobilenotification_deploy_all)
-    else()
-        message(WARNING "MobileNotification > MOBILENOTIFICATION_ANDROID_PACKAGE_SOURCE_DIR is not set, "
-                        "please provide the same path than your application's QT_ANDROID_PACKAGE_SOURCE_DIR before add_subdirectory(MobileNotification).")
     endif()
 endif()
 
