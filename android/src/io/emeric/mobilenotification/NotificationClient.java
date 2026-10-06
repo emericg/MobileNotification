@@ -181,7 +181,8 @@ public class NotificationClient
     public static void notify(final Context context, final String title, final String message,
                               final int channel, final int requestId, final String payload,
                               final int color, final String bigText, final String largeIcon,
-                              final String bigPicture) {
+                              final String bigPicture, final int progressMax, final int progress,
+                              final boolean progressIndeterminate, final boolean ongoing) {
         try {
             ChannelInfo ci = ensureChannel(context, channel);
 
@@ -208,7 +209,22 @@ public class NotificationClient
             builder.setShowWhen(true);
             // (Sound/vibration/lights come from the channel on Android O+, not the builder)
             builder.setOnlyAlertOnce(true);
-            builder.setAutoCancel(true);
+            // autoCancel dismisses on tap, which is contradictory for an ongoing notification
+            builder.setAutoCancel(!ongoing);
+
+            // "Sticky" while an operation runs (independent of progress): excluded from
+            // "Clear all" and sorted higher. NOT a hard lock -- Android 14+ still lets the
+            // user swipe it away; true pinning needs a foreground-service notification.
+            if (ongoing) builder.setOngoing(true);
+
+            // Progress bar: indeterminate (animated) takes precedence; otherwise a determinate
+            // bar when a positive max is given. Neither set means no bar (a normal notification).
+            if (progressIndeterminate) {
+                builder.setProgress(0, 0, true);
+            } else if (progressMax > 0) {
+                int clamped = Math.max(0, Math.min(progress, progressMax));
+                builder.setProgress(progressMax, clamped, false);
+            }
 
             // Large icon (right-side thumbnail) from a local file path
             if (largeIcon != null && !largeIcon.isEmpty()) {

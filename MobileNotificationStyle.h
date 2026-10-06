@@ -50,6 +50,10 @@ struct MobileNotificationStyle
     Q_PROPERTY(QString bigText MEMBER bigText)
     Q_PROPERTY(QString largeIcon MEMBER largeIcon)
     Q_PROPERTY(QString bigPicture MEMBER bigPicture)
+    Q_PROPERTY(int progressMax MEMBER progressMax)
+    Q_PROPERTY(int progress MEMBER progress)
+    Q_PROPERTY(bool progressIndeterminate MEMBER progressIndeterminate)
+    Q_PROPERTY(bool ongoing MEMBER ongoing)
 
 public:
     //! Accent color as a packed 0xAARRGGBB value; 0 = platform default. Android-only.
@@ -63,6 +67,25 @@ public:
 
     //! Absolute file path to a local image shown large when expanded.
     QString bigPicture;
+
+    //! Progress bar upper bound; a determinate bar is shown when > 0 (with \a progress).
+    //! Android-only (setProgress); ignored on iOS, which has no notification progress bar.
+    int progressMax = 0;
+
+    //! Current progress value, clamped to 0..progressMax. Re-post with the same requestId
+    //! to advance the bar; post with progressMax = 0 to remove it. Android-only.
+    int progress = 0;
+
+    //! Show a continuously animating (activity) bar instead of a determinate one; when true,
+    //! progressMax / progress are ignored. Android-only.
+    bool progressIndeterminate = false;
+
+    //! Mark the notification "sticky" while an operation runs: excluded from "Clear all"
+    //! and sorted higher. Independent of progress. Android-only (setOngoing); ignored on iOS.
+    //! \note This is a hint, not a hard lock: on Android 14+ the user can still swipe an
+    //! ongoing notification away. Truly pinning a notification to the panel requires posting
+    //! it from a foreground service (startForeground), which this notify()-based API cannot do.
+    bool ongoing = false;
 };
 
 /* ************************************************************************** */

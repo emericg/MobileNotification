@@ -121,7 +121,7 @@ void AndroidNotificationUtils::notify(const QString &title, const QString &messa
     QJniObject jsBigPicture = QJniObject::fromString(style.bigPicture);
     QJniObject::callStaticMethod<void>(
         kNotificationClientClass, "notify",
-        "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;)V",
+        "(Landroid/content/Context;Ljava/lang/String;Ljava/lang/String;IILjava/lang/String;ILjava/lang/String;Ljava/lang/String;Ljava/lang/String;IIZZ)V",
         QNativeInterface::QAndroidApplication::context(),
         jsTitle.object<jstring>(),
         jsMessage.object<jstring>(),
@@ -131,7 +131,11 @@ void AndroidNotificationUtils::notify(const QString &title, const QString &messa
         static_cast<jint>(style.color),
         jsBigText.object<jstring>(),
         jsLargeIcon.object<jstring>(),
-        jsBigPicture.object<jstring>());
+        jsBigPicture.object<jstring>(),
+        static_cast<jint>(style.progressMax),
+        static_cast<jint>(style.progress),
+        static_cast<jboolean>(style.progressIndeterminate),
+        static_cast<jboolean>(style.ongoing));
 }
 
 void AndroidNotificationUtils::cancel(int requestId)

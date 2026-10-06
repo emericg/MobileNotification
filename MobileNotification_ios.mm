@@ -121,7 +121,9 @@ void IosNotificationUtils::registerChannel(int channel, const QString &name, int
 void IosNotificationUtils::notify(const QString &title, const QString &message, int channel, int requestId, const QString &payload,
                                   const MobileNotificationStyle &style)
 {
-    // style.color is ignored: iOS has no per-notification accent color
+    // style.color is ignored: iOS has no per-notification accent color.
+    // style.progress* / style.ongoing are ignored: iOS has no notification progress bar
+    // and no ongoing/persistent flag (a Live Activity would be needed for progress).
 
     UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];
     content.title = title.toNSString();

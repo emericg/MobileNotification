@@ -61,7 +61,9 @@ public:
                         const MobileNotificationStyle &style) {
         qDebug() << "MobileNotification::notify()" << requestId << "channel:" << channel << "-" << title << "-" << message
                  << "payload:" << payload << "color:" << Qt::hex << style.color << "bigText:" << style.bigText
-                 << "largeIcon:" << style.largeIcon << "bigPicture:" << style.bigPicture;
+                 << "largeIcon:" << style.largeIcon << "bigPicture:" << style.bigPicture
+                 << "progress:" << style.progress << "/" << style.progressMax
+                 << "indeterminate:" << style.progressIndeterminate << "ongoing:" << style.ongoing;
     }
 
     virtual void cancel(int requestId) {

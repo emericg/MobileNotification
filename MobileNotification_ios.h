@@ -32,6 +32,17 @@
 
 /*!
  * \brief iOS backend for MobileNotification (UNUserNotificationCenter).
+ *
+ * Posts/cancels local notifications and drives the app-icon badge. iOS has no
+ * channel concept, so registerChannel() is a no-op (the channel id is reused as
+ * the notification's thread identifier for grouping).
+ *
+ * A UNUserNotificationCenterDelegate reads the requestId back from a tapped
+ * notification and forwards it through onNotificationClicked().
+ *
+ * \note This header is pure C++ (the delegate is held as an opaque pointer) so
+ * it can be included from the C++ MobileNotification.cpp; the implementation
+ * lives in the Objective-C++ MobileNotification_ios.mm.
  */
 class IosNotificationUtils : public PlatformNotificationUtils
 {

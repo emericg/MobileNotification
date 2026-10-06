@@ -30,6 +30,13 @@
 
 /*!
  * \brief Android backend for MobileNotification (JNI to NotificationClient.java).
+ *
+ * Posts/cancels notifications and drives the app-icon badge through Android's
+ * NotificationManager. It is a singleton: the JNI bridge in
+ * MobileNotification_android.cpp calls back into getInstance() on a tap.
+ *
+ * Works from both the UI process and the (headless QCoreApplication) background
+ * service process, using QAndroidApplication::context() for the Context.
  */
 class AndroidNotificationUtils : public PlatformNotificationUtils
 {
